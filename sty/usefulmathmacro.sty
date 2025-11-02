@@ -1,0 +1,432 @@
+\NeedsTeXFormat{LaTeX2e}[2019-10-01]
+\ProvidesPackage{usefulmathmacro}[2021/05/01 Provides some useful math commands]
+
+\RequirePackage{amsmath}
+\RequirePackage{amssymb}
+\RequirePackage{amsthm}
+
+% --------------------
+% config macro
+% --------------------
+\ProvideDocumentCommand{\ummIndicatorSym}{}{\chi}
+\ProvideDocumentCommand{\ummConfigIndicatorSym}{m}{\RenewDocumentCommand{\ummIndicatorSym}{}{#1}}
+\ProvideDocumentCommand{\ummSetBuilderSepSym}{}{|}
+\ProvideDocumentCommand{\ummConfigSetBuilderSepSym}{m}{\RenewDocumentCommand{\ummSetBuilderSepSym}{}{#1}}
+\ProvideDocumentCommand{\ummNormalizeDenomCmd}{}{\abs}
+\ProvideDocumentCommand{\ummConfigNormalizeDenomCmd}{m}{\RenewDocumentCommand{\ummNormalizeDenomCmd}{}{#1}}
+
+% --------------------
+% auxiliary helper function
+% --------------------
+% TODO:
+%     currently mid-delim can only be a delimiter (e.g. \vert)
+%     but common choices for this may not be delimiters (e.g. :)
+%     the current way is to prefix with a dot (.)
+%     but then it would not size with \left \right (not sure if it should)
+%     there may be other symbols that have the same issue
+% 1:star 2:{left-delim} 3:{content} 4:[mid-delim] 5:[second-content] 6:{right-delim}
+\ProvideDocumentCommand{\ummGeneralBracket}{s m m o o m}{
+    \IfBooleanTF{#1}{
+        \IfNoValueTF{#5}{ \left#2 #3 \right#6 }{ \left#2 #3 \,\middle#4\, #5 \right#6 }
+    }{
+        \IfNoValueTF{#5}{
+            \left#2 \protect\vphantom{#3} \right.
+            #3
+            \left. \protect\vphantom{#3} \right#6
+        }{
+            \left#2 \protect\vphantom{#3 #5} \right. #3
+            \left. \protect\vphantom{#3} \,\middle#4\, \protect\vphantom{#5} \right.
+            \allowbreak
+            #5 \left. \protect\vphantom{#3 #5} \right#6
+        }
+    }
+}
+% 1:[name] 2:{dom} 3:[codom]
+\ProvideDocumentCommand{\ummHomSet}{O{\mathrm{Hom}} m o}{
+    {#1 (#2 \IfNoValueF{#3}{, #3})}
+}
+% 1:{sym} 2:{lower} 3:[upper]
+\ProvideDocumentCommand{\ummFuncClass}{m m o}{
+    {{#1}_{\IfNoValueF{#3}{\,#3}}^{#2}}
+}
+
+% --------------------
+% brackets
+% --------------------
+% 1:* 2:(content)
+\ProvideDocumentCommand{\parenth}{s r()}{
+    \IfBooleanTF{#1}{\ummGeneralBracket*}{\ummGeneralBracket}{(}{#2}{)}
+}
+% 1:* 2:{content}
+\ProvideDocumentCommand{\chevron}{s m}{
+    \IfBooleanTF{#1}{\ummGeneralBracket*}{\ummGeneralBracket}{\langle}{#2}{\rangle}
+}
+% 1:* 2:[content]
+\ProvideDocumentCommand{\bracket}{s r[]}{
+    \IfBooleanTF{#1}{\ummGeneralBracket*}{\ummGeneralBracket}{[}{#2}{]}
+}
+% 1:* 2:{content}
+\ProvideDocumentCommand{\braces}{s m}{
+    \IfBooleanTF{#1}{\ummGeneralBracket*}{\ummGeneralBracket}{\{}{#2}{\}}
+}
+\ProvideDocumentCommand{\bra}{s m}{
+        \IfBooleanTF{#1}{\ummGeneralBracket*}{\ummGeneralBracket}{\langle}{#2}{.|}
+}
+\ProvideDocumentCommand{\ket}{s m}{
+        \IfBooleanTF{#1}{\ummGeneralBracket*}{\ummGeneralBracket}{.|}{#2}{\rangle}
+}
+
+% --------------------
+% common functions
+% --------------------
+% 1:* 2:{content}
+\ProvideDocumentCommand{\abs}{s m}{
+    \IfBooleanTF{#1}{\ummGeneralBracket*}{\ummGeneralBracket}{|}{#2}{|}
+}
+% 1:* 2:{content}
+\ProvideDocumentCommand{\norm}{s m}{
+    \IfBooleanTF{#1}{\ummGeneralBracket*}{\ummGeneralBracket}{\|}{#2}{\|}
+}
+% 1:* 2:{var1} 3: {var2}
+\ProvideDocumentCommand{\innerProd}{s m m}{
+    \IfBooleanTF{#1}{ \parenth({#2}, \, {#3}) }{ \chevron{{#2}, \, {#3}} }
+}
+% pending deprecation
+\ProvideDocumentCommand{\braketProd}{m m}{
+    \ummGeneralBracket{\langle}{#1}[.|][#2]{\rangle}
+}
+\ProvideDocumentCommand{\ceil}{s m}{
+    \IfBooleanTF{#1}{\ummGeneralBracket*}{\ummGeneralBracket}{\lceil}{#2}{\rceil}
+}
+% 1:* 2:{content}
+\ProvideDocumentCommand{\floor}{s m}{
+    \IfBooleanTF{#1}{\ummGeneralBracket*}{\ummGeneralBracket}{\lfloor}{#2}{\rfloor}
+}
+\ProvideDocumentCommand{\evalAt}{m m}{
+    {\ummGeneralBracket{.}{#2}{|}_{#1}}
+}
+\ProvideDocumentCommand{\inv}{s O{1} m}{
+    \IfBooleanTF{#1}{ { \parenth*( #3 ) }^{ -#2 } }{ { {#3} }^{ -#2 } }
+}
+% 1:* 2:[macro:\abs] 3:{var}
+\ProvideDocumentCommand{\normalized}{s O{\ummNormalizeDenomCmd} m}{
+    \IfBooleanTF{#1}{#3 / {#2{#3}}}{\frac{#3}{#2{#3}}}
+}
+% 1:* 2:{var} 3:{start-count} 4:{end-count}
+\ProvideDocumentCommand{\summation}{s m m m}{
+    \sum\IfBooleanT{#1}{\limits}_{#2 = #3}^{#4}
+}
+% 1:* 2:{var} 3:{start-count} 4:{end-count}
+\ProvideDocumentCommand{\product}{s m m m}{
+    \prod\IfBooleanT{#1}{\limits}_{#2 = #3}^{#4}
+}
+% 1:{var}
+\providecommand{\conju}[1]{ {\overline{#1}} }
+% 1:* 2:{var} 3:[pt]
+\ProvideDocumentCommand{\limit}{s m o}{
+    \lim\IfBooleanT{#1}{\limits}_{{#2} \IfNoValueF{#3}{\to {#3}}}
+}
+% 1:{var} 2:{var}
+\ProvideDocumentCommand{\pFq}{m m}{
+    { {}_{ #1 }F_{ #2 } }
+}
+\DeclareMathOperator{\arsinh}{arsinh}
+\DeclareMathOperator{\arcosh}{arcosh}
+\providecommand{\arcsinh}{\arsinh}  % alias
+\providecommand{\arccosh}{\arcosh}  % alias
+
+% --------------------
+% common objects
+% --------------------
+% 1:[sub:]
+\ProvideDocumentCommand{\idenMap}{O{}}{
+    {\mathrm{Id}_{#1}}
+}
+% 1:* (ignored) 2:[sub]
+\ProvideDocumentCommand{\indicator}{s o}{
+%     {\IfBooleanTF{#1}{\mathbf{1}}{\chi}_{#2}}
+    {{\ummIndicatorSym}_{#2}}
+}
+\providecommand{\oo}{\infty}
+% 1:[numerator:1]
+\ProvideDocumentCommand{\halfOf}{O{1}}{ {\frac{#1}{2}} }
+% 1:[numerator:1]
+\ProvideDocumentCommand{\half}{O{1}}{ \halfOf[#1] } % compatibility
+% 1:[denominator:1]
+\providecommand{\oneOver}[1]{ \frac{1}{ #1 } }
+
+% --------------------
+% numbers
+% --------------------
+\providecommand{\real}{ \mathbb{R} }
+\providecommand{\RR}{ \real } %alias
+\providecommand{\complex}{ \mathbb{C} }
+\providecommand{\CC}{ \complex } %alias
+\providecommand{\integer}{ \mathbb{Z} }
+\providecommand{\ZZ}{ \integer } %alias
+\providecommand{\naturalNumber}{ \mathbb{N} }
+\providecommand{\NN}{ \naturalNumber } %alias
+\providecommand{\rational}{ \mathbb{Q} }
+\providecommand{\QQ}{ \rational } %alias
+\providecommand{\generalField}{ \mathbb{F} }
+\providecommand{\FF}{ \generalField } %alias
+
+% --------------------
+% numbers - variant
+% --------------------
+% 1:*
+\ProvideDocumentCommand{\positiveReal}{s}{
+    \IfBooleanTF{#1}{ (0, \infty] }{ \real^+ }
+}
+% 1:*
+\ProvideDocumentCommand{\nonnegativeReal}{s}{
+    \IfBooleanTF{#1}{ [0, \infty] }{ [0, \infty) }
+}
+\providecommand{\positiveInteger}{ {\integer^+} }
+
+% --------------------
+% common sets
+% --------------------
+% 1:[dim:]
+\ProvideDocumentCommand{\torus}{O{}}{ {\mathbb{T}^{#1}} }
+% 1:[dim:]
+\ProvideDocumentCommand{\unitSphere}{O{1}}{ {S^{#1}} } % pending deprecation
+% 1:* 2:{start-var} 3:{end-var}
+\ProvideDocumentCommand{\integerRange}{s m m}{
+    \IfBooleanTF{#1}{\braces*}{\braces}{#2, \ldots, #3}
+}
+% 1:* 2:[sep:|] 3:{desc} 4:[filter]
+\ProvideDocumentCommand{\setBuilder}{s O{\ummSetBuilderSepSym} m o}{
+    \IfBooleanTF{#1}{\ummGeneralBracket*}{\ummGeneralBracket}{\{}{#3}[#2][#4]{\}}
+}
+
+% --------------------
+% matrix sets
+% --------------------
+% 1:{dim1} 2:{dim2}
+\providecommand{\matrixSpace}[2]{ {M_{{#1} \times {#2}}} }
+% 1:{sub}
+\providecommand{\generalLinearGp}[1]{ \ummHomSet[\mathrm{GL}]{#1} }
+% 1:{sub}
+\providecommand{\specialLinearGp}[1]{ \ummHomSet[\mathrm{SL}]{#1} }
+% 1:{sub}
+\providecommand{\orthogonalGp}[1]{ \ummHomSet[\mathrm{O}]{#1} }
+% 1:{sub}
+\providecommand{\specialOrthogonalGp}[1]{ \ummHomSet[\mathrm{SO}]{#1} }
+% 1:{sub}
+\providecommand{\unitaryGp}[1]{ \ummHomSet[\mathrm{U}]{#1} }
+% 1:{sub}
+\providecommand{\specialUnitaryGp}[1]{ \ummHomSet[\mathrm{SU}]{#1} }
+
+% --------------------
+% linear algebra
+% --------------------
+% 1:* 2:{set}
+\ProvideDocumentCommand{\spanSet}{s m}{
+    \mathrm{Span} \! \IfBooleanTF{#1}{\parenth*}{\parenth}(#2)
+}
+% 1:* 2:{ele}
+\ProvideDocumentCommand{\spanSetOfEle}{s m}{
+    \IfBooleanTF{#1}{\spanSet*}{\spanSet}{\setBuilder{#2}}
+}
+% 1:[bracketType] 2:{coor1;coor2;...}
+\ProvideDocumentCommand{\colVect}{O{p} >{\SplitList { ; }}m}{
+    \begingroup
+    \newcommand{\ummTempAddLineBreakAfter}[1]{##1 \\}
+    \begin{#1matrix}
+        \ProcessList{#2}{\ummTempAddLineBreakAfter}
+    \end{#1matrix}
+    \endgroup
+}
+% 1:[bracketType] 2:{coor1;coor2;...}
+\ProvideDocumentCommand{\rowVect}{O{p} >{\SplitList { ; }}m}{
+    \begingroup
+    \newif\ifUMMTempAddAmpBefore
+    \newcommand{\ummTempAddAmpBefore}[1]{
+        \ifUMMTempAddAmpBefore & \fi
+        \UMMTempAddAmpBeforetrue
+        ##1
+    }
+    \begin{#1matrix}
+        \ProcessList{#2}{\ummTempAddAmpBefore}
+    \end{#1matrix}
+    \endgroup
+}
+% 1:[power:2] 2:{var}
+\ProvideDocumentCommand{\tensorPower}{O{2} m}{
+    {{#2}^{\otimes {#1}}}
+}
+\providecommand{\transpose}{ \mathsf{T} }
+\providecommand{\conjuTranspose}{ \mathsf{H} }
+\ProvideDocumentCommand{\idenMatrix}{O{}}{ {I_{#1}} }
+\DeclareMathOperator{\nullity}{nullity}
+\DeclareMathOperator{\trace}{tr}
+\DeclareMathOperator{\rank}{rank}
+% 1:{op}
+\providecommand{\nullSpace}[1]{ \mathsf{N}\parenth(#1) }
+% 1:{op}
+\providecommand{\range}[1]{ \mathsf{R}\parenth(#1) }
+% 1:* 2:{lidx1,uidx1;lidx2,uidx2;...}
+\ProvideDocumentCommand{\dirac}{s >{\SplitList{ ; }}m}{
+    \begingroup
+    \newcommand{\ummTempDirac}[1]{\delta_{##1}}
+    \newcommand{\ummTempDiracTwo}[2]{\delta_{##1}^{##2}}
+    \NewDocumentCommand{\ummTempSplitThenDirac}{>{\SplitArgument{1}{ , }}m}{
+        \ummTempDiracTwo ##1
+    }
+    \IfBooleanTF{#1}{
+        \ProcessList{#2}{\ummTempSplitThenDirac}
+    }{
+        \ProcessList{#2}{\ummTempDirac}
+    }
+    \endgroup
+}
+
+% --------------------
+% complexity/asymptotic classes
+% --------------------
+% 1:* 2:{func}
+\ProvideDocumentCommand{\bigO}{s m}{\mathcal{O}\IfBooleanTF{#1}{(#2)}{\!\parenth(#2)}}
+% 1:* 2:{func}
+\ProvideDocumentCommand{\smallO}{s m}{o\IfBooleanTF{#1}{(#2)}{\!\parenth(#2)}}
+% 1:* 2:{func}
+\ProvideDocumentCommand{\bigO}{s m}{\Omega\IfBooleanTF{#1}{(#2)}{\!\parenth(#2)}}
+% 1:* 2:{func}
+\ProvideDocumentCommand{\bigO}{s m}{\omega\IfBooleanTF{#1}{(#2)}{\!\parenth(#2)}}
+% 1:* 2:{func}
+\ProvideDocumentCommand{\bigO}{s m}{\Theta\IfBooleanTF{#1}{(#2)}{\!\parenth(#2)}}
+
+% --------------------
+% arrow aliases
+% --------------------
+\providecommand{\surjTo}{ \twoheadrightarrow }
+\providecommand{\injTo}{ \hookrightarrow }
+\providecommand{\bijTo}{ \leftrightarrow }
+\providecommand{\weakTo}{ \rightharpoonup }
+\providecommand{\unifTo}{ \rightrightarrows }
+
+% --------------------
+% operators
+% --------------------
+\DeclareMathOperator{\support}{supp}
+\DeclareMathOperator{\sgn}{sgn}
+\DeclareMathOperator{\image}{Im}
+
+% --------------------
+% calculus operators
+% --------------------
+% 1:* 2:[order] 3:{var} 4:[func]
+\ProvideDocumentCommand{\ordinaryD}{s o m o}{
+    \IfBooleanTF{#1}{
+        \frac{\mathrm{d}^{\IfNoValueF{#2}{#2}} \IfNoValueF{#4}{#4}}{{\mathrm{d} #3}^{\IfNoValueF{#2}{#2}}}
+    }{
+        \frac{\mathrm{d}^{\IfNoValueF{#2}{#2}}}{{\mathrm{d} #3}^{\IfNoValueF{#2}{#2}}} \IfNoValueF{#4}{#4}
+    }
+}
+% 1:{var}
+\providecommand{\od}[1]{\ordinaryD{#1}}
+% 1:* 2:[order] 3:{var} 4:[func]
+\ProvideDocumentCommand{\partialD}{s o m o}{
+    \IfBooleanTF{#1}{
+        \frac{\partial^{\IfNoValueF{#2}{#2}} \IfNoValueF{#4}{#4}}{{\partial #3}^{\IfNoValueF{#2}{#2}}}
+    }{
+        \frac{\partial^{\IfNoValueF{#2}{#2}}}{{\partial #3}^{\IfNoValueF{#2}{#2}}} \IfNoValueF{#4}{#4}
+    }
+}
+% 1:* 2:{var}
+\ProvideDocumentCommand{\pd}{s m}{
+    \IfBooleanTF{#1}{
+        \partialD{#2}
+    }{
+        {\partial_{#2}}
+    }
+}
+% 1: {var} 2:{func}
+\ProvideDocumentCommand{\jacobian}{m r()}{
+    { \partialD*{(#2)}[(#1)] }
+}
+% 1:* 2:[var:]
+\ProvideDocumentCommand{\grad}{s O{}}{
+    \IfBooleanTF{#1}{ \mathrm{grad} \!  }{ \nabla_{#2} }
+}
+% 1:* 2:[var:]
+\ProvideDocumentCommand{\divergence}{s O{}}{
+    \IfBooleanTF{#1}{ \mathrm{div} \!  }{ \grad[#2] \!\cdot }
+}
+% 1:* 2:[var:]
+\ProvideDocumentCommand{\curl}{s O{}}{
+    \IfBooleanTF{#1}{ \mathrm{curl} \!  }{ \grad[#2] \!\times }
+}
+% 1:{lower} 2:{upper}
+\providecommand{\integral}[2]{ {\int_{#1}^{#2}} }
+% 1:{var}
+% \providecommand{\dd}[1]{ \mathrm{d}{#1} }
+% 1:* 2:{var1;var2;...}
+\ProvideDocumentCommand{\dd}{s >{\SplitList{ ; }}m}{
+    \begingroup
+    \newcommand{\ummddSep}{\IfBooleanF{#1}{\,}}
+    \newcommand{\ummdd}[1]{\ummddSep \mathrm{d}{##1}}
+    \ProcessList{#2}{\ummdd}
+    \endgroup
+}
+% 1:{var1;var2;...}
+\providecommand{\integralVar}{\dd}  % alias
+% 1:* 2:[measure] 3:{var} 4:{lower} 5:{upper} 6:{func}
+% star form retained for compatibility
+% TODO: auto multivar
+\ProvideDocumentCommand{\integration}{s o m m m m}{
+    \integral{#4}{#5} #6
+    \IfNoValueTF{#2}{\dd{#3}}{\,#2(\dd*{#3})}
+}
+
+% --------------------
+% function spaces
+% --------------------
+% 1:[index:0] [content]
+\ProvideDocumentCommand{\continuousFunc}{O{0} o}{
+    \ummFuncClass{\mathit{C}}{#1}[#2]
+}
+% 1:[content]
+\ProvideDocumentCommand{\smoothFunc}{o}{
+    \ummFuncClass{\mathit{C}}{\infty}[#1]
+}
+% 1:[content]
+\ProvideDocumentCommand{\analyticFunc}{o}{
+    \ummFuncClass{\mathit{C}}{\omega}[#1]
+}
+% 1:{upper} 2:[content]
+\ProvideDocumentCommand{\lpFunc}{m o}{
+    \ummFuncClass{\mathit{L}}{#1}[#2]
+}
+\providecommand{\LlogLFunc}{ \mathit{L} \log \mathit{L} }
+% 1:{index1} 2:{index2} 3:[content]
+\ProvideDocumentCommand{\sobolevWFunc}{m m o}{
+    \ummFuncClass{\mathit{W}}{{#1}, {#2}}[#3]
+}
+% 1:{index} 2:[content]
+\ProvideDocumentCommand{\sobolevHFunc}{m o}{
+    \ummFuncClass{\mathit{H}}{#1}[#2]
+}
+% 1:[deg] 2:[content]
+\ProvideDocumentCommand{\polyFunc}{o o}{
+    {\mathsf{P}_{\IfNoValueF{#1}{#1}} \IfNoValueF{#2}{(#2)}}
+}
+
+% --------------------
+% probabilty
+% --------------------
+% 1:star 2:[sub] 3:{var} 4:[cond]
+\ProvideDocumentCommand{\prob}{s o m o}{
+    {\IfNoValueTF{#2}{P}{P_{#2}}}\IfBooleanTF{#1}{\ummGeneralBracket{(}{#3}[|][#4]{)}}{\ummGeneralBracket*{(}{#3}[|][#4]{)}}
+}
+
+% 1: star 2:[sub] 3:{var} 4:[cond]
+\ProvideDocumentCommand{\expect}{s o m o}{
+    {\IfNoValueTF{#2}{E}{E_{#2}}}\IfBooleanTF{#1}{\ummGeneralBracket{(}{#3}[|][#4]{)}}{\ummGeneralBracket*{(}{#3}[|][#4]{)}}
+}
+
+% 1:[sub] 2:{var} 3:[cond]
+\ProvideDocumentCommand{\variance}{o m o}{
+    {\IfNoValueTF{#1}{\mathrm{Var}}{\mathrm{Var}_{#1}}}\ummGeneralBracket*{(}{#2}[|][#3]{)}
+}
+
